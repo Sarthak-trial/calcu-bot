@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcu-Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --sky: #7fd3f4;
+    --body-yellow: #ffd23f;
+    --cream: #fffaf0;
+    --pink: #ff5fa2;
+    --purple: #a06bff;
+    --orange: #ff9d43;
+    --green: #4ecb71;
+    --red: #ff5c5c;
+    --blue: #4fc3f7;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle, rgba(255,255,255,0.55) 2px, transparent 2.5px) 0 0/26px 26px,
+      var(--sky);
+    font-family: 'Baloo 2', sans-serif;
+    padding: 24px;
+  }
+
+  .calc {
+    width: 340px;
+    background: var(--body-yellow);
+    border-radius: 34px;
+    border: 5px solid var(--ink);
+    padding: 20px;
+    box-shadow: 10px 10px 0 var(--ink);
+    position: relative;
+    transform: rotate(-1deg);
+  }
+
+  .face-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 2px 4px 14px;
+  }
+
+  .eyes { display: flex; gap: 8px; }
+
+  .eye {
+    width: 22px;
+    height: 22px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pupil {
+    width: 8px;
+    height: 8px;
+    background: var(--ink);
+    border-radius: 50%;
+  }
+
+  .title {
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--ink);
+    letter-spacing: 0.5px;
+  }
+
+  .display {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 20px;
+    padding: 20px 16px 14px;
+    margin-bottom: 18px;
+    box-shadow: inset 3px 3px 0 rgba(0,0,0,0.06);
+    transform: rotate(0.6deg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .prev-line {
+    min-height: 18px;
+    text-align: right;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: #9a8f7a;
+    letter-spacing: 0.5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .prev-line::-webkit-scrollbar { display: none; }
+
+  .main-line {
+    text-align: right;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 42px;
+    color: var(--ink);
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .main-line::-webkit-scrollbar { display: none; }
+
+  .main-line.compact { font-size: 26px; color: var(--ink); }
+  .main-line:not(.compact) {
+    color: var(--pink);
+    text-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  button {
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    height: 58px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+    background: var(--cream);
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+  }
+
+  button:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  .op {
+    background: var(--orange);
+    color: var(--ink);
+  }
+
+  .func {
+    background: var(--purple);
+    color: var(--cream);
+    font-size: 17px;
+  }
+
+  .func:first-child {
+    background: var(--red);
+  }
+
+  .signtoggle {
+    background: var(--blue);
+    color: var(--ink);
+    font-size: 16px;
+  }
+
+  .wide-equals {
+    grid-column: span 4;
+    background: var(--green);
+    color: var(--ink);
+    font-size: 24px;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .wide-equals:active {
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  @media (max-width: 380px) {
+    .calc { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="calc">
+  <div class="face-row">
+    <div class="eyes">
+      <div class="eye"><div class="pupil"></div></div>
+      <div class="eye"><div class="pupil"></div></div>
+    </div>
+    <div class="title">Calcu-Bot</div>
+  </div>
+
+  <div class="display">
+    <div class="prev-line" id="prevLine">&nbsp;</div>
+    <div class="main-line" id="mainLine">0</div>
+  </div>
+
+  <div class="pad">
+    <button class="func" onclick="clearAll()">AC</button>
+    <button class="func" onclick="openParen()">(</button>
+    <button class="func" onclick="closeParen()">)</button>
+    <button class="func" onclick="percent()">%</button>
+
+    <button onclick="inputDigit('7')">7</button>
+    <button onclick="inputDigit('8')">8</button>
+    <button onclick="inputDigit('9')">9</button>
+    <button class="op" onclick="inputOp('÷')">÷</button>
+
+    <button onclick="inputDigit('4')">4</button>
+    <button onclick="inputDigit('5')">5</button>
+    <button onclick="inputDigit('6')">6</button>
+    <button class="op" onclick="inputOp('×')">×</button>
+
+    <button onclick="inputDigit('1')">1</button>
+    <button onclick="inputDigit('2')">2</button>
+    <button onclick="inputDigit('3')">3</button>
+    <button class="op" onclick="inputOp('−')">−</button>
+
+    <button class="signtoggle" onclick="toggleSign()">+/-</button>
+    <button onclick="inputDigit('0')">0</button>
+    <button onclick="inputDot()">.</button>
+    <button class="op" onclick="inputOp('+')">+</button>
+
+    <button class="wide-equals" onclick="equals()">=</button>
+  </div>
+</div>
+
+<script>
+  // expr holds the raw expression being built, e.g. "12+3×(4−1)"
+  let expr = '';
+  let openCount = 0;
+  let justEvaluated = false;
+  let prevExprDisplay = '';
+
+  const mainLine = document.getElementById('mainLine');
+  const prevLine = document.getElementById('prevLine');
+
+  // ---------- display helpers ----------
+
+  function formatNum(numStr) {
+    if (numStr === 'Error') return numStr;
+    let [intPart, decPart] = numStr.split('.');
+    const neg = intPart.startsWith('-') || intPart.startsWith('−');
+    if (neg) intPart = intPart.slice(1);
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    let result = (neg ? '−' : '') + intPart;
+    if (decPart !== undefined) result += '.' + decPart;
+    return result;
+  }
+
+  function formatExpr(str) {
+    if (!str) return '0';
+    return str
+      .replace(/([+−×÷])/g, ' $1 ')
+      .replace(/\(/g, ' ( ')
+      .replace(/\)/g, ' ) ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function updateDisplay() {
+    mainLine.classList.toggle('compact', !justEvaluated);
+    if (justEvaluated) {
+      prevLine.textContent = prevExprDisplay || '\u00a0';
+      mainLine.textContent = expr === '' ? 'Error' : formatNum(expr);
+    } else {
+      prevLine.textContent = '\u00a0';
+      mainLine.textContent = expr === '' ? '0' : formatExpr(expr);
+    }
+  }
+
+  // ---------- trailing-number helpers ----------
+
+  function trailingNumberStart() {
+    let i = expr.length;
+    while (i > 0 && /[0-9.]/.test(expr[i - 1])) i--;
+    return i;
+  }
+
+  // ---------- input handlers ----------
+
+  function inputDigit(d) {
+    if (justEvaluated) { expr = ''; justEvaluated = false; }
+    if (expr.replace(/[^0-9]/g, '').length >= 14) return;
+    const last = expr.slice(-1);
+    expr += (last === ')') ? '×' + d : d;
+    updateDisplay();
+  }
+
+  function inputDot() {
+    if (justEvaluated) { expr = ''; justEvaluated = false; }
+    const i = trailingNumberStart();
+    const seg = expr.slice(i);
+    if (seg.includes('.')) return;
+    expr += (seg === '') ? '0.' : '.';
+    updateDisplay();
+  }
+
+  function inputOp(op) {
+    if (justEvaluated) { justEvaluated = false; }
+    if (expr === '') {
+      if (op === '−') expr = '−';
+      updateDisplay();
+      return;
+    }
+    const last = expr.slice(-1);
+    if ('+−×÷'.includes(last)) {
+      if (op === '−' && last !== '−') { expr += op; }
+      else { expr = expr.slice(0, -1) + op; }
+      updateDisplay();
+      return;
+    }
+    if (last === '(') {
+      if (op === '−') { expr += op; updateDisplay(); }
+      return;
+    }
+    expr += op;
+    updateDisplay();
+  }
+
+  function openParen() {
+    if (justEvaluated) { expr = ''; justEvaluated = false; }
+    const last = expr.slice(-1);
+    expr += /[0-9)]/.test(last) ? '×(' : '(';
+    openCount++;
+    updateDisplay();
+  }
+
+  function closeParen() {
+    if (justEvaluated) return;
+    const last = expr.slice(-1);
+    if (openCount > 0 && last !== '' && !'+−×÷('.includes(last)) {
+      expr += ')';
+      openCount--;
+      updateDisplay();
+    }
+  }
+
+  function toggleSign() {
+    if (justEvaluated) { justEvaluated = false; }
+    if (expr === '') { expr = '−'; updateDisplay(); return; }
+    const wrapped = expr.match(/\(−(\d+\.?\d*)\)$/);
+    if (wrapped) {
+      expr = expr.slice(0, expr.length - wrapped[0].length) + wrapped[1];
+      updateDisplay();
+      return;
+    }
+    const i = trailingNumberStart();
+    const seg = expr.slice(i);
+    if (seg === '') return;
+    expr = expr.slice(0, i) + '(−' + seg + ')';
+    updateDisplay();
+  }
+
+  function percent() {
+    if (justEvaluated) { justEvaluated = false; }
+    const i = trailingNumberStart();
+    const seg = expr.slice(i);
+    if (seg === '') return;
+    const val = parseFloat(seg) / 100;
+    expr = expr.slice(0, i) + trimResult(val);
+    updateDisplay();
+  }
+
+  function clearAll() {
+    expr = '';
+    openCount = 0;
+    justEvaluated = false;
+    prevExprDisplay = '';
+    updateDisplay();
+  }
+
+  function backspace() {
+    if (justEvaluated) { clearAll(); return; }
+    if (expr.length === 0) return;
+    const removed = expr.slice(-1);
+    expr = expr.slice(0, -1);
+    if (removed === '(') openCount--;
+    if (removed === ')') openCount++;
+    updateDisplay();
+  }
+
+  // ---------- BODMAS parser (parens > × ÷ > + −) ----------
+
+  function tokenize(str) {
+    const tokens = [];
+    let i = 0;
+    while (i < str.length) {
+      const c = str[i];
+      if (c === ' ') { i++; continue; }
+      if ('+−×÷()'.includes(c)) { tokens.push(c); i++; continue; }
+      if (/[0-9.]/.test(c)) {
+        let j = i;
+        while (j < str.length && /[0-9.]/.test(str[j])) j++;
+        tokens.push(str.slice(i, j));
+        i = j;
+        continue;
+      }
+      throw new Error('bad character');
+    }
+    return tokens;
+  }
+
+  function evaluateExpression(str) {
+    const tokens = tokenize(str);
+    let pos = 0;
+    const peek = () => tokens[pos];
+    const next = () => tokens[pos++];
+
+    function parseFactor() {
+      if (peek() === '+') { next(); return parseFactor(); }
+      if (peek() === '−') { next(); return -parseFactor(); }
+      if (peek() === '(') {
+        next();
+        const val = parseExpr();
+        if (peek() === ')') next();
+        return val;
+      }
+      const tok = next();
+      const num = parseFloat(tok);
+      if (tok === undefined || isNaN(num)) throw new Error('bad number');
+      return num;
+    }
+
+    function parseTerm() {
+      let val = parseFactor();
+      while (peek() === '×' || peek() === '÷') {
+        const op = next();
+        const rhs = parseFactor();
+        if (op === '×') val *= rhs;
+        else {
+          if (rhs === 0) throw new Error('divide by zero');
+          val /= rhs;
+        }
+      }
+      return val;
+    }
+
+    function parseExpr() {
+      let val = parseTerm();
+      while (peek() === '+' || peek() === '−') {
+        const op = next();
+        const rhs = parseTerm();
+        val = (op === '+') ? val + rhs : val - rhs;
+      }
+      return val;
+    }
+
+    const result = parseExpr();
+    if (pos !== tokens.length) throw new Error('unexpected trailing tokens');
+    return result;
+  }
+
+  function trimResult(n) {
+    if (!isFinite(n)) return 'Error';
+    let s = n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+    if (s.replace('-', '').replace('.', '').length > 12) {
+      s = parseFloat(n.toPrecision(10)).toString();
+    }
+    return s.replace('-', '−');
+  }
+
+  function equals() {
+    if (expr === '' || justEvaluated) return;
+    const toEval = expr + ')'.repeat(openCount);
+    try {
+      const result = evaluateExpression(toEval);
+      const resultStr = trimResult(result);
+      prevExprDisplay = formatExpr(toEval) + ' =';
+      expr = resultStr;
+      openCount = 0;
+      justEvaluated = true;
+    } catch (e) {
+      prevExprDisplay = formatExpr(toEval);
+      expr = '';
+      openCount = 0;
+      justEvaluated = true;
+    }
+    updateDisplay();
+  }
+
+  // ---------- keyboard support ----------
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key >= '0' && e.key <= '9') inputDigit(e.key);
+    else if (e.key === '.') inputDot();
+    else if (e.key === '+') inputOp('+');
+    else if (e.key === '-') inputOp('−');
+    else if (e.key === '*') inputOp('×');
+    else if (e.key === '/') { e.preventDefault(); inputOp('÷'); }
+    else if (e.key === '(') openParen();
+    else if (e.key === ')') closeParen();
+    else if (e.key === '%') percent();
+    else if (e.key === 'Enter' || e.key === '=') equals();
+    else if (e.key === 'Backspace') backspace();
+    else if (e.key === 'Escape') clearAll();
+  });
+
+  updateDisplay();
+</script>
+
+</body>
+</html>
